@@ -1,295 +1,642 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KABUT — Laut Jawa, 1952</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lautan yang Mendengar — Visual Novel</title>
 <style>
-:root{
-  --ink:#e3dec9;
-  --ink-dim:#8c8574;
-  --gold:#c29b48;
-  --blood:#9e3b32;
-  --cold:#4b7078;
-}
-*{box-sizing:border-box;}
-html,body{height:100%;margin:0;background:#020304;color:var(--ink);font-family:'Cormorant Garamond',Georgia,serif;overflow:hidden;}
+  :root {
+    --ink: #d8d0c0;
+    --muted: #8f877b;
+    --accent: #b33a2e;
+    --accent-bright: #e04a3a;
+    --panel: rgba(8, 10, 12, .88);
+    --mono: 'Courier New', Courier, monospace;
+    --serif: Georgia, 'Times New Roman', serif;
+  }
 
-#bg-a,#bg-b{
-  position:fixed;inset:0;background-size:cover;background-position:center;transition:opacity 1.5s ease;
-}
-#bg-a{z-index:1;}
-#bg-b{z-index:2;opacity:0;}
-#fog{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.6;mix-blend-mode:screen;}
-#vignette{
-  position:fixed;inset:0;z-index:4;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 25%, rgba(0,0,0,.6) 80%, rgba(0,0,0,.95) 100%);
-}
-#grain{
-  position:fixed;inset:-50%;z-index:5;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity:.05;animation:grain .9s steps(2) infinite;
-}
-@keyframes grain{0%{transform:translate(0,0)}50%{transform:translate(-2%,2%)}100%{transform:translate(1%,-1%)}}
+  * { box-sizing: border-box; }
 
-#stage{
-  position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;justify-content:space-between;
-  padding:clamp(16px,3vw,32px);pointer-events:none;
-}
-#stage > *{pointer-events:auto;}
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #040506;
+    color: var(--ink);
+    font-family: var(--mono);
+    overflow: hidden;
+  }
 
-#hud{display:flex;justify-content:space-between;align-items:center;font-family:'Inter',sans-serif;}
-#chapter{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-dim);}
-#tools button{
-  background:transparent;border:1px solid rgba(227,222,201,.2);color:var(--ink-dim);
-  width:32px;height:32px;cursor:pointer;font-size:12px;transition:.2s;
-}
-#tools button:hover{color:var(--ink);border-color:var(--gold);}
-#tools button.on{color:var(--gold);border-color:var(--gold);}
+  button { font: inherit; }
 
-#vn{
-  max-width:850px;width:100%;margin:0 auto;
-  background:rgba(4,6,8,.92);border-left:2px solid rgba(194,155,72,.4);
-  padding:clamp(18px,2.5vw,30px);backdrop-filter:blur(6px);min-height:36vh;
-  display:flex;flex-direction:column;justify-content:flex-end;
-}
-#text p{
-  font-size:clamp(17px,1.9vw,21px);line-height:1.7;margin:0 0 14px;color:var(--ink);
-  text-shadow:0 2px 10px rgba(0,0,0,.8);
-}
-#text em{color:#d4caa8;font-style:italic;}
+  #game {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+  }
 
-#choices{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
-.choice{
-  width:100%;text-align:left;background:rgba(227,222,201,.03);
-  border:1px solid rgba(227,222,201,.12);border-left:2px solid transparent;
-  color:var(--ink);font-family:'Cormorant Garamond',Georgia,serif;
-  font-size:clamp(16px,1.6vw,19px);padding:10px 16px;cursor:pointer;
-  transition:.2s;display:flex;gap:12px;align-items:baseline;
-}
-.choice .arrow{color:var(--gold);opacity:.5;font-family:'Inter',sans-serif;font-size:11px;}
-.choice:hover{border-left-color:var(--gold);background:rgba(194,155,72,.08);transform:translateX(4px);}
-.choice:hover .arrow{opacity:1;}
+  /* ================= BACKGROUND ================= */
+  .bg-layer {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: brightness(.32) saturate(.65) contrast(1.15);
+    opacity: 1;
+    transition: opacity .9s ease, filter 1.2s ease;
+    z-index: 0;
+  }
 
-#title-screen{
-  position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at 50% 40%, #0d141a 0%, #030507 60%, #010101 100%);
-  text-align:center;padding:24px;transition:opacity .8s ease;
-}
-#title-screen.hidden{opacity:0;pointer-events:none;}
-#title-screen h1{font-size:clamp(50px,12vw,120px);font-weight:300;letter-spacing:.25em;margin:0 0 5px;color:var(--ink);}
-#title-screen h2{font-size:clamp(13px,1.8vw,18px);font-weight:300;font-style:italic;color:var(--ink-dim);margin:0 0 40px;letter-spacing:.12em;}
-#title-screen button{
-  background:transparent;border:1px solid rgba(227,222,201,.2);color:var(--ink);
-  font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;letter-spacing:.15em;
-  padding:12px 32px;cursor:pointer;transition:.3s;width:240px;
-}
-#title-screen button:hover{border-color:var(--gold);background:rgba(194,155,72,.1);color:#fff;}
-.hidden{display:none !important;}
+  .bg-layer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(4, 5, 6, 0) 0%, rgba(4, 5, 6, .35) 55%, rgba(4, 5, 6, .88) 100%),
+      linear-gradient(to bottom, rgba(4, 5, 6, .72), rgba(4, 5, 6, .15) 45%, rgba(4, 5, 6, .94));
+  }
+
+  /* ================= FOG ================= */
+  .fog {
+    position: absolute;
+    inset: -25%;
+    z-index: 1;
+    pointer-events: none;
+    opacity: .55;
+    background:
+      radial-gradient(ellipse at 25% 60%, rgba(190, 200, 205, .09), transparent 55%),
+      radial-gradient(ellipse at 75% 35%, rgba(140, 155, 165, .07), transparent 50%);
+    filter: blur(20px);
+    animation: fogDrift 24s ease-in-out infinite alternate;
+  }
+
+  .fog-b {
+    animation-duration: 34s;
+    animation-direction: alternate-reverse;
+    opacity: .35;
+    transform: scale(1.15);
+  }
+
+  @keyframes fogDrift {
+    0% { transform: translate3d(-3%, 0, 0) scale(1); }
+    100% { transform: translate3d(4%, -2%, 0) scale(1.08); }
+  }
+
+  /* ================= VIGNETTE & SCANLINES ================= */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    box-shadow:
+      inset 0 0 180px rgba(0, 0, 0, .95),
+      inset 0 0 60px rgba(0, 0, 0, .8);
+  }
+
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, .12) 3px,
+      transparent 4px
+    );
+    mix-blend-mode: multiply;
+    opacity: .55;
+    transition: opacity .6s ease;
+  }
+
+  body.paranoid .scanlines { opacity: .85; }
+
+  /* ================= GLITCH ================= */
+  .glitch {
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(179, 58, 46, .18),
+      transparent 20%,
+      rgba(80, 160, 180, .12) 50%,
+      transparent 80%
+    );
+    mix-blend-mode: screen;
+  }
+
+  .glitch.active {
+    animation: glitchPulse .45s steps(2) 2;
+    opacity: .45;
+  }
+
+  @keyframes glitchPulse {
+    0% { transform: translateX(-4px); }
+    50% { transform: translateX(6px); }
+    100% { transform: translateX(0); }
+  }
+
+  /* ================= HUD ================= */
+  #hud {
+    position: absolute;
+    top: 20px;
+    right: 22px;
+    z-index: 10;
+    width: 170px;
+    opacity: .8;
+    text-align: right;
+    pointer-events: none;
+  }
+
+  .hud-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: .62rem;
+    letter-spacing: .12em;
+    color: #a99f90;
+    margin-bottom: 6px;
+  }
+
+  .mental-bar {
+    height: 3px;
+    background: rgba(255, 255, 255, .1);
+    overflow: hidden;
+  }
+
+  #mentalFill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #3e3a32, #8a5a3a);
+    transition: width .6s ease, background .6s ease;
+    box-shadow: 0 0 12px rgba(179, 58, 46, .35);
+  }
+
+  /* ================= SOUND BUTTON ================= */
+  .sound-btn {
+    position: absolute;
+    top: 18px;
+    left: 20px;
+    z-index: 40;
+    background: rgba(4, 5, 6, .45);
+    border: 1px solid rgba(216, 208, 192, .2);
+    color: #a99f90;
+    padding: 8px 12px;
+    font-size: .62rem;
+    letter-spacing: .14em;
+    cursor: pointer;
+    transition: .2s;
+  }
+
+  .sound-btn:hover {
+    border-color: var(--accent);
+    color: var(--ink);
+  }
+
+  /* ================= STAGE & DIALOG ================= */
+  #stage {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 5vw 6vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  #stage::-webkit-scrollbar { display: none; }
+
+  #dialog {
+    width: min(920px, 100%);
+    min-height: 178px;
+    padding: 22px 28px 30px;
+    margin-top: auto;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, rgba(9, 11, 13, .86), rgba(4, 5, 6, .95));
+    border: 1px solid rgba(179, 58, 46, .28);
+    border-left: 3px solid var(--accent);
+    box-shadow:
+      0 0 70px rgba(0, 0, 0, .85),
+      inset 0 0 50px rgba(0, 0, 0, .55);
+    backdrop-filter: blur(7px);
+    position: relative;
+    cursor: pointer;
+  }
+
+  #speaker {
+    font-family: var(--serif);
+    font-size: .72rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #c1503f;
+    min-height: 1.2em;
+    margin-bottom: 8px;
+  }
+
+  #text {
+    font-size: clamp(.92rem, 2.1vw, 1.08rem);
+    line-height: 1.85;
+    color: #ddd5c8;
+    text-shadow: 0 1px 2px #000;
+    min-height: 5.2em;
+    white-space: pre-wrap;
+  }
+
+  #continue {
+    position: absolute;
+    right: 18px;
+    bottom: 10px;
+    font-size: .8rem;
+    color: var(--accent);
+    opacity: 0;
+  }
+
+  #continue.visible {
+    animation: blink 1.3s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+  }
+
+  /* ================= CHOICES ================= */
+  #choices {
+    width: min(920px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+    flex-shrink: 0;
+  }
+
+  .choice {
+    text-align: left;
+    padding: 14px 18px;
+    background: rgba(7, 9, 11, .78);
+    border: 1px solid rgba(216, 208, 192, .18);
+    color: #cfc6b8;
+    cursor: pointer;
+    letter-spacing: .02em;
+    font-size: clamp(.85rem, 1.8vw, .95rem);
+    transition: all .2s ease;
+    opacity: 0;
+    animation: choiceIn .35s ease forwards;
+    backdrop-filter: blur(4px);
+  }
+
+  .choice:hover,
+  .choice:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(35, 14, 12, .88);
+    color: #fff3e6;
+    transform: translateX(5px);
+    box-shadow: 0 0 24px rgba(179, 58, 46, .12);
+  }
+
+  .choice::before {
+    content: '▸';
+    color: var(--accent);
+    margin-right: 10px;
+  }
+
+  @keyframes choiceIn {
+    to { opacity: 1; }
+  }
+
+  /* ================= PARANOID EFFECT ================= */
+  body.paranoid #dialog {
+    animation: dialogShake .18s infinite;
+    border-left-color: var(--accent-bright);
+  }
+
+  body.paranoid #text {
+    text-shadow:
+      1.5px 0 rgba(179, 58, 46, .35),
+      -1.5px 0 rgba(70, 150, 170, .25);
+  }
+
+  @keyframes dialogShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+  }
+
+  /* ================= TITLE SCREEN ================= */
+  #title-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 5vw;
+    overflow-y: auto;
+    background: radial-gradient(ellipse at center, rgba(4, 5, 6, .25) 0%, rgba(4, 5, 6, .92) 75%);
+    transition: opacity .9s ease;
+  }
+
+  #title-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .title-kicker {
+    font-size: .62rem;
+    letter-spacing: .35em;
+    color: var(--accent);
+    margin-bottom: 22px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 7.5vw, 5.4rem);
+    font-weight: 400;
+    letter-spacing: .16em;
+    line-height: 1.05;
+    margin: 0 0 22px;
+    color: #e8dfd2;
+    text-shadow: 0 0 40px rgba(179, 58, 46, .18);
+  }
+
+  .title-sub {
+    max-width: 520px;
+    font-size: .82rem;
+    line-height: 1.8;
+    color: #a99f90;
+    margin: 0 0 28px;
+  }
+
+  .warning {
+    max-width: 520px;
+    border: 1px solid rgba(216, 208, 192, .14);
+    padding: 14px 18px;
+    margin-bottom: 30px;
+    background: rgba(0, 0, 0, .25);
+    text-align: left;
+  }
+
+  .warning strong {
+    display: block;
+    font-size: .6rem;
+    letter-spacing: .22em;
+    color: #c1503f;
+    margin-bottom: 6px;
+  }
+
+  .warning p {
+    margin: 0;
+    font-size: .68rem;
+    line-height: 1.7;
+    color: #8f877b;
+  }
+
+  .start-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: #e8dfd2;
+    padding: 14px 30px;
+    letter-spacing: .2em;
+    font-size: .7rem;
+    cursor: pointer;
+    transition: .25s;
+  }
+
+  .start-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(179, 58, 46, .3);
+  }
+
+  .title-hint {
+    margin-top: 22px;
+    font-size: .6rem;
+    color: #6f6860;
+    letter-spacing: .1em;
+  }
+
+  /* ================= ENDING SCREEN ================= */
+  #ending-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 6vw;
+    overflow-y: auto;
+    background: radial-gradient(ellipse at center, rgba(4, 5, 6, .4), rgba(4, 5, 6, .97));
+  }
+
+  #ending-screen[hidden] { display: none; }
+
+  .ending-kicker {
+    font-size: .62rem;
+    letter-spacing: .28em;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+
+  #endingTitle {
+    font-family: var(--serif);
+    font-size: clamp(1.8rem, 5vw, 3.4rem);
+    font-weight: 400;
+    letter-spacing: .12em;
+    color: #e8dfd2;
+    margin: 0 0 22px;
+  }
+
+  .ending-rule {
+    width: 60px;
+    height: 1px;
+    background: var(--accent);
+    margin-bottom: 28px;
+  }
+
+  #endingText {
+    max-width: 620px;
+    font-size: .9rem;
+    line-height: 1.9;
+    color: #b9b0a2;
+    white-space: pre-wrap;
+    margin: 0 0 34px;
+    text-align: left;
+  }
+
+  /* ================= RESPONSIVE ================= */
+  @media (max-width: 600px) {
+    #stage { padding: 70px 4vw 4vh; }
+    #dialog { padding: 18px 18px 26px; min-height: 190px; }
+    #hud { width: 130px; }
+    .sound-btn { top: 14px; left: 14px; padding: 7px 10px; }
+    #title-screen { padding: 7vw 6vw; }
+    #ending-screen { padding: 8vw 6vw; }
+  }
 </style>
 </head>
 <body>
+<div id="game">
+  <div id="bg" class="bg-layer"></div>
+  <div class="fog fog-a"></div>
+  <div class="fog fog-b"></div>
+  <div class="vignette"></div>
+  <div class="scanlines"></div>
+  <div id="glitch" class="glitch"></div>
 
-<div id="bg-a"></div>
-<div id="bg-b"></div>
-<canvas id="fog"></canvas>
-<div id="vignette"></div>
-<div id="grain"></div>
-
-<div id="stage">
   <header id="hud">
-    <div id="chapter">BAB I — LAUT JAWA</div>
-    <div id="tools">
-      <button id="btn-audio" title="Suasana Laut / Ambient">♪</button>
+    <div class="hud-row">
+      <span class="hud-label">TEKANAN MENTAL</span>
+      <span id="mentalValue">0%</span>
     </div>
+    <div class="mental-bar"><div id="mentalFill"></div></div>
   </header>
 
-  <section id="vn">
-    <div id="text"></div>
+  <button id="soundBtn" class="sound-btn" type="button" aria-pressed="true">SUARA: ON</button>
+
+  <main id="stage" style="display:none;">
+    <div id="dialog">
+      <div id="speaker"></div>
+      <div id="text" aria-live="polite"></div>
+      <div id="continue">▼</div>
+    </div>
     <div id="choices"></div>
+  </main>
+
+  <section id="title-screen">
+    <div class="title-kicker">SEBUAH FIKSI SEJARAH ALTERNATIF</div>
+    <h1>LAUTAN<br>YANG MENDENGAR</h1>
+    <p class="title-sub">
+      Laut Jawa, 1948. Kabut menyimpan lebih banyak suara
+      daripada yang sanggup kau dengar.
+    </p>
+    <div class="warning">
+      <strong>PERINGATAN KONTEN</strong>
+      <p>
+        Karya ini mengandung tema kekerasan perang, trauma psikologis,
+        dan tekanan mental. Seluruh tokoh dan peristiwa adalah fiksi
+        sejarah alternatif; bukan rekonstruksi sejarah.
+      </p>
+    </div>
+    <button id="startBtn" class="start-btn" type="button">MASUK KE KABUT</button>
+    <p class="title-hint">Gunakan klik, Spasi, atau Enter untuk melanjutkan.</p>
+  </section>
+
+  <section id="ending-screen" hidden>
+    <div class="ending-kicker" id="endingSubtitle"></div>
+    <h2 id="endingTitle"></h2>
+    <div class="ending-rule"></div>
+    <p id="endingText"></p>
+    <button id="restartBtn" class="start-btn" type="button">KEMBALI KE AWAL</button>
   </section>
 </div>
 
-<div id="title-screen">
-  <h1>KABUT</h1>
-  <h2>Laut Jawa · 1952</h2>
-  <button id="btn-begin">Mulai Cerita</button>
-</div>
-
 <script>
-const BG = {
-  sea: 'radial-gradient(ellipse at 50% 120%, #15222b 0%, #070d12 50%, #020304 100%)',
-  westerling: 'radial-gradient(ellipse at 50% 50%, #201a14 0%, #0c0806 60%, #020202 100%)',
-  fight: 'radial-gradient(ellipse at 50% 50%, #301412 0%, #100504 60%, #020101 100%)',
-  cell: 'radial-gradient(ellipse at 50% 30%, #12181c 0%, #06090c 60%, #010203 100%)',
-  flashback: 'radial-gradient(ellipse at 50% 50%, #1a1e16 0%, #080a06 60%, #020301 100%)'
-};
+(() => {
+  'use strict';
 
-const SCENES = {
-  start: {
-    chapter: 'BAB I — BAYANGAN DI ATAS GELOMBANG',
-    bg: 'sea',
-    text: [
-      `Laut Jawa malam ini pekat, membungkus geladak kapal patroli Republik dengan kabut asin yang tebal. Adirja berdiri sendiri di anjungan, jemarinya meraba foto Presiden Sukarno di saku bajunya—sebuah keyakinan buta yang selama ini menjadi kompas hidupnya, bahkan setelah ia harus melumuri tangannya sendiri dengan darah sahabatnya, Yuhdistira.`,
-      `Tiba-tiba, radar kapal mendeteksi lambung kapal asing tanpa lampu navigasi yang bergerak diam-diam ke arah selatan menuju Australia. Membawa koper dokumen rahasia kolonial dan Republik. Ketika disergap, sosok yang berdiri di atas geladak kapal buron itu menoleh. Raymond Westerling. Senyum tipis dan dingin khas pria Belanda itu menembus kegelapan malam.`
-    ],
-    choices: [
-      { t: '“Menyerah atau kutenggelamkan kapalmu, Westerling!”', to: 'confront' },
-      { t: 'Diam, menatap tajam musuh bebuyutannya dalam keheningan.', to: 'confront' }
-    ]
-  },
+  /* ============================================================
+     LATAR BELAKANG (UNSPLASH)
+     ============================================================ */
+  const BACKGROUNDS = {
+    beach: 'https://images.unsplash.com/photo-1550053868-2b58c9b7f166?auto=format&fit=crop&w=1920&q=80',
+    sea:   'https://images.unsplash.com/photo-1606654292373-62b5515adfd6?auto=format&fit=crop&w=1920&q=80',
+    coast: 'https://images.unsplash.com/photo-1545358108-2428cf334d24?auto=format&fit=crop&w=1920&q=80'
+  };
 
-  confront: {
-    chapter: 'BAB I — KONFRONTASI',
-    bg: 'westerling',
-    text: [
-      `Westerling tertawa kecil, suara baritonnya memecah deru ombak. Tanpa aba-aba, ia melompat menyeberang ke geladak kapal Adirja. Gerakannya cepat, mematikan, dan penuh obsesi lama. <em>“Kau selalu terlalu lambat mengambil keputusan, Adirja. Sama seperti saat kau harus mengorbankan si anak manis Yuhdistira demi angan-angan Sukarnomu itu.”</em>`,
-      `Seketika bayangan Yuhdistira berkelebat di tepi hutan bakau pantai tempat eksekusi itu terjadi—wajah Yuhdistira menatapnya lurus dari balik kabut, membuat kepala Adirja berdenyut hebat. Westerling menerjang, menghujani serangan fisik brutal. Duel tangan kosong di atas geladak yang licin tak terelakkan. Pertarungan hidup dan mati!`
-    ],
-    choices: [
-      { t: '[GELUD] Gunakan kekuatan penuh untuk menjatuhkan Westerling!', to: 'fight_win' },
-      { t: '[GELUD] Berkelit dan biarkan emosi sesaat membuat Adirja kewalahan.', to: 'fight_lose' }
-    ]
-  },
+  /* ============================================================
+     NASKAH CERITA
+     ============================================================ */
+  const STORY = {
+    start: {
+      bg: 'beach',
+      lines: [
+        { speaker: '', text: 'Laut Jawa, Desember 1948.' },
+        { speaker: '', text: 'Kabut turun seperti kain kafan yang basah. Di kejauhan, lampu kapal patroli berkedip — satu, dua, lalu hilang.' },
+        { speaker: 'Adirja', text: 'Kau masih di sini, Yud? Masih di antara ombak?' },
+        { speaker: '', text: 'Tidak ada jawaban. Hanya angin yang membawa bau garam, karat, dan sesuatu yang mirip daging terbakar.' },
+        { speaker: '', text: 'Radio di pinggangnya mendesis. Frekuensi 47.2. Saluran yang seharusnya sudah mati sejak Yuhdistira meninggal.' }
+      ],
+      choices: [
+        { text: 'Nyalakan radio. Biarkan suara itu datang.', next: 'radio_on', mental: 8, flags: ['radioOn'] },
+        { text: 'Biarkan desis itu mati. Kabut sudah cukup bicara.', next: 'flare', mental: 2 },
+        { text: 'Ganti frekuensi ke markas. Cari perintah, bukan hantu.', next: 'hq', mental: 4 }
+      ]
+    },
 
-  fight_win: {
-    chapter: 'BAB II — KEMENANGAN BERDARAH',
-    bg: 'fight',
-    text: [
-      `Adirja menepis hantaman tangan Westerling, membalikkan keadaan dengan membanting tubuh pria Belanda itu ke pagar pembatas besi kapal. Napas keduanya memburu di udara malam yang dingin.`,
-      `Namun, di detik-detik terakhir sebelum Adirja melumpuhkannya, Westerling justru menarik kerah baju Adirja dengan sisa tenaganya, memaksa wajah mereka mendekat secara gila—mencekik leher Adirja sambil mencucurkan seringai terakhir, mencium bibir Adirja dalam ciuman penuh darah, benci, dan keputusasaan, sebelum akhirnya tubuh Westerling terkulai lemas di atas geladak. Ia mati di tangan Adirja.`
-    ],
-    choices: [
-      { t: 'Menatap jenazahnya sementara bayangan Yuhdistira tersenyum dingin di dalam kabut.', to: 'end_win' }
-    ]
-  },
+    radio_on: {
+      bg: 'beach',
+      lines: [
+        { speaker: 'Radio', text: '...ssshh... Adirja... kau masih di sana?' },
+        { speaker: 'Adirja', text: 'Yud? Itu kau?' },
+        { speaker: 'Yuhdistira', text: '"Kau menembakku di dermaga itu. Apakah kau masih mendengar ombak, Adirja?"' },
+        { speaker: '', text: 'Tidak ada hantu di pantai ini. Hanya ingatan yang menolak mati. Tapi suara itu terdengar lebih nyata daripada pasir di bawah sepatunya.' },
+        { speaker: 'Yuhdistira', text: '"Kau bisa memilih, Adir. Menghadapiku, atau menghadapi dirimu sendiri."' }
+      ],
+      choices: [
+        { text: 'Jawab: "Aku di sini, Yud. Aku selalu di sini."', next: 'answer', mental: 12, flags: ['answered'] },
+        { text: 'Matikan radio. Ini bukan dia.', next: 'silence', mental: 6 },
+        { text: 'Bantah: "Bukan aku. Westerling yang membunuhmu."', next: 'deny', mental: 16, flags: ['denied'] }
+      ]
+    },
 
-  fight_lose: {
-    chapter: 'BAB II — TAHANAN DI RUANG GELAP',
-    bg: 'cell',
-    text: [
-      `Benturan keras membuat pandangan Adirja berkunang-kunang. Ingatannya terseret kilas balik ke hutan pantai tempat ia menembak Yuhdistira—darah di pasir basah, mata Yuhdistira yang menatap penuh pengampunan. Kelengahan itu dimanfaatkan oleh Westerling.`,
-      `Adirja kalah, dihantam hingga tersungkur. Kesadarannya memudar, dan ketika ia terbangun, ia mendapati dirinya sudah diikat ketat di sebuah ruangan kapal bawah yang sempit dan pengap. Westerling berdiri di dekat pintu, membawa koper dokumen, menatapnya dengan campuran rasa jijik dan rasa memiliki yang menyeramkan.`
-    ],
-    choices: [
-      { t: 'Berontak dalam ikatan tali sambil memanggil nama Sukarno dan Yuhdistira.', to: 'end_lose' }
-    ]
-  },
+    answer: {
+      bg: 'sea',
+      lines: [
+        { speaker: 'Adirja', text: 'Aku di sini, Yud. Aku selalu di sini.' },
+        { speaker: '', text: 'Desis radio berubah menjadi tawa pelan. Tawa itu tidak datang dari luar. Ia datang dari dalam tengkorak Adirja sendiri.' },
+        { speaker: '', text: 'Di kejauhan, flare merah membelah kabut. Kapal patroli berbelok ke arah pantai.', glitch: true },
+        { speaker: 'Adirja', text: 'Baiklah. Kalau kau ingin melihatku, lihatlah.' }
+      ],
+      choices: [
+        { text: 'Hadapi kapal itu. Biarkan Westerling melihat wajahmu.', next: 'confrontation', mental: 14 },
+        { text: 'Mundur ke hutan. Hidup lebih penting dari harga diri.', next: 'retreat', mental: 6 }
+      ]
+    },
 
-  end_win: {
-    chapter: 'EPILOGUE — SENDIRI DI LAUT LEPAS',
-    bg: 'sea',
-    text: [
-      `Westerling telah tiada. Koper dokumen berhamburan di geladak. Adirja berdiri terpaku seorang diri di tengah Laut Jawa yang kembali sunyi. Kabut kian menutup pandangan. Di antara deburan ombak, ia bersumpah masih mendengar suara tawa Yuhdistira dan bisikan Sukarno dari kejauhan.`,
-      `The End. (Jalur Kemenangan Toksik)`
-    ],
-    choices: [{ t: 'Mainkan ulang dari awal', to: 'start' }]
-  },
+    deny: {
+      bg: 'sea',
+      lines: [
+        { speaker: 'Adirja', text: 'Bukan aku. Westerling yang membunuhmu. Westerling dan semua yang ada di pihaknya.' },
+        { speaker: 'Yuhdistira', text: '"Kau bahkan tidak percaya pada kalimatmu sendiri."' },
+        { speaker: '', text: 'Radio mati. Tapi tawa itu tetap ada, bersarang di antara tulang rusuknya.', glitch: true },
+        { speaker: 'Sersan Bayu', text: 'Komandan... kapal Westerling terlihat di utara. Mereka membawa lentera besar.' },
+        { speaker: 'Adirja', text: 'Berapa banyak?' },
+        { speaker: 'Sersan Bayu', text: 'Cukup untuk membuat kita berhenti berharap.' }
+      ],
+      choices: [
+        { text: 'Perintahkan serangan. Kita akhiri ini malam ini.', next: 'confrontation', mental: 18 },
+        { text: 'Evakuasi kampung nelayan. Anak buahmu bukan umpan meriam.', next: 'retreat', mental: 8, flags: ['savedVillagers'] }
+      ]
+    },
 
-  end_lose: {
-    chapter: 'EPILOGUE — TAWANAN DI BAWAH DEK',
-    bg: 'cell',
-    text: [
-      `Kapal melaju membawa Adirja membelah malam menuju pelarian rahasia. Ia dibiarkan terikat dalam gelap, ditemani bayang-bayang Yuhdistira yang terus menemaninya di sudut ruangan sempit itu. Ikatan cinta dan benci masa lalu kini menjadi penjara abadinya.`,
-      `The End. (Jalur Tawanan Obsesif)`
-    ],
-    choices: [{ t: 'Mainkan ulang dari awal', to: 'start' }]
-  }
-};
+    silence: {
+      bg: 'sea',
+      lines: [
+        { speaker: '', text: 'Adirja mematikan radio. Desis itu lenyap, digantikan oleh suara ombak yang lebih jujur.' },
+        { speaker: '', text: 'Namun kabut tidak memberinya ketenangan. Sebuah flare merah melayang di langit, lalu turun perlahan seperti bintang yang sekarat.' },
+        { speaker: 'Sersan Bayu', text: 'Komandan... kapal Westerling. Mereka sudah dekat.' },
+        { speaker: 'Adirja', text: 'Berapa banyak?' },
+        { speaker: 'Sersan Bayu', text: 'Cukup untuk membuat kita berhenti berharap.' }
+      ],
+      choices: [
+        { text: 'Kirim pasukan ke utara. Kita hadang mereka di air.', next: 'confrontation', mental: 12 },
+        { text: 'Selamatkan warga dulu. Perang bisa menunggu.', next: 'retreat', mental: 4, flags: ['savedVillagers'] }
+      ]
+    },
 
-let currentScene = 'start';
-const textEl = document.getElementById('text');
-const choicesEl = document.getElementById('choices');
-const chapterEl = document.getElementById('chapter');
-const bgA = document.getElementById('bg-a');
-const bgB = document.getElementById('bg-b');
-let currentBg = null;
-
-function setBg(key) {
-  if (key === currentBg) return;
-  currentBg = key;
-  const img = BG[key] || BG.sea;
-  bgB.style.backgroundImage = img;
-  bgB.style.opacity = '1';
-  setTimeout(() => {
-    bgA.style.backgroundImage = img;
-    bgB.style.transition = 'none';
-    bgB.style.opacity = '0';
-    setTimeout(() => { bgB.style.transition = 'opacity 1.5s ease'; }, 50);
-  }, 1500);
-}
-
-function goTo(id) {
-  const sc = SCENES[id];
-  if (!sc) return;
-  currentScene = id;
-  setBg(sc.bg);
-  chapterEl.textContent = sc.chapter;
-  textEl.innerHTML = '';
-  choicesEl.innerHTML = '';
-
-  sc.text.forEach(pText => {
-    const p = document.createElement('p');
-    p.innerHTML = pText;
-    textEl.appendChild(p);
-  });
-
-  sc.choices.forEach(c => {
-    const btn = document.createElement('button');
-    btn.className = 'choice';
-    btn.innerHTML = `<span class="arrow">›</span><span>${c.t}</span>`;
-    btn.onclick = () => goTo(c.to);
-    choicesEl.appendChild(btn);
-  });
-}
-
-// Web Audio API Ambient (Suara ombak & dengungan mencekam gratis, tanpa file luar)
-let audioCtx = null, masterGain = null, audioOn = false;
-function initAudio() {
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return false;
-  audioCtx = new AC();
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0;
-  masterGain.connect(audioCtx.destination);
-
-  // Drone nada rendah horor
-  const o1 = audioCtx.createOscillator(); o1.type = 'sine'; o1.frequency.value = 48;
-  const o2 = audioCtx.createOscillator(); o2.type = 'sine'; o2.frequency.value = 72;
-  const g = audioCtx.createGain(); g.gain.value = 0.3;
-  o1.connect(g); o2.connect(g); g.connect(masterGain);
-  o1.start(); o2.start();
-
-  // Noise angin/ombak
-  const len = audioCtx.sampleRate * 3;
-  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
-  const data = buf.getChannelData(0);
-  for(let i=0; i<len; i++) data[i] = (Math.random()*2-1)*0.3;
-  const src = audioCtx.createBufferSource(); src.buffer = buf; src.loop = true;
-  const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 300;
-  const ng = audioCtx.createGain(); ng.gain.value = 0.25;
-  src.connect(lp); lp.connect(ng); ng.connect(masterGain);
-  src.start();
-  return true;
-}
-
-document.getElementById('btn-audio').onclick = () => {
-  if (!audioCtx) { if (!initAudio()) return; }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  audioOn = !audioOn;
-  masterGain.gain.linearRampToValueAtTime(audioOn ? 0.05 : 0.0, audioCtx.currentTime + 1);
-  document.getElementById('btn-audio').classList.toggle('on', audioOn);
-};
-
-document.getElementById('btn-begin').onclick = () => {
-  document.getElementById('title-screen').classList.add('hidden');
-  goTo('start');
-};
-
-bgA.style.backgroundImage = BG.sea;
-</script>
-</body>
-</html>
+    flare: {
+      bg: 'sea',
+      lines: [
+        { speaker: '', text: 'Adirja membiarkan radio itu mati. Desisnya perlahan tenggelam dalam suara ombak.' },
+        { speaker: '', text: 'Lalu sebuah flare merah meledak di langit. Cahayanya menerpa kabut dan mengubah laut menjadi tembaga.', glitch: true },
+        { speaker: 'Sersan Bayu', text: 'Komandan! Kapal Westerling! Mereka menemukan kita
